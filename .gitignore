@@ -1,0 +1,21 @@
+*.iml
+.gradle
+/local.properties
+
+# Ignore the entire IDE settings folder
+.idea/
+
+# Firebase configuration
+/app/google-services.json
+
+# Build outputs
+/build
+/app/build
+/captures
+
+# System files
+.DS_Store
+
+# C++ / Native build files (if you ever add them)
+.externalNativeBuild
+.cxx
