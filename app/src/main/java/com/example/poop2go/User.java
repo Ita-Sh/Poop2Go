@@ -3,15 +3,15 @@ package com.example.poop2go;
 public class User {
     private String uId;
     private String name;
-    private int dateOfBirth;    //format: YYYYMMDD
+    private String dateOfBirth;    //format: YYYYMMDD
 
     public User (){
         this.uId = "";
         this.name = "";
-        this.dateOfBirth = 0;
+        this.dateOfBirth = "";
     }    //default User
-    public User(String name, int dateOfBirth){
-        this.uId = ""; //set automatically
+    public User(String uId, String name, String dateOfBirth){
+        this.uId = uId; //set automatically
         this.name = name;
         this.dateOfBirth = dateOfBirth;
     }
@@ -22,7 +22,7 @@ public class User {
     public String getName(){
         return this.name;
     }
-    public int getDateOfBirth(){
+    public String getDateOfBirth(){
         return this.dateOfBirth;
     }
 
@@ -32,7 +32,7 @@ public class User {
     public void setName(String name){
         this.name = name;
     }
-    public void setDateOfBirth(int dateOfBirth){
+    public void setDateOfBirth(String dateOfBirth){
         this.dateOfBirth = dateOfBirth;
     }
 

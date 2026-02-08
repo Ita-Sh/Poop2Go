@@ -121,6 +121,11 @@ public class RegisterActivity extends AppCompatActivity {
 
                                 Log.i("Firebase", "createUserWithEmail:success");
                                 FirebaseUser user = FBRef.refAuth.getCurrentUser();
+
+                                //Save to FB database
+                                String uId = user.getUid();
+                                saveUserToFBDB(uId, name, dob);
+
                                 Toast.makeText(RegisterActivity.this, "User Created", Toast.LENGTH_SHORT).show();
                                 Intent intent = new Intent(RegisterActivity.this, MapActivity.class);
                                 startActivity(intent);
@@ -150,5 +155,9 @@ public class RegisterActivity extends AppCompatActivity {
 
         editor.putBoolean(REMEMBER_ME_KEY, cbRememberMe.isChecked());
         editor.apply();
+    }
+    private void saveUserToFBDB(String uId, String name, String dob) {
+        User user = new User(uId, name, dob);
+        FBRef.refUsers.child(uId).setValue(user);
     }
 }
