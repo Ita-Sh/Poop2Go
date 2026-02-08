@@ -2,6 +2,7 @@ package com.example.poop2go;
 
 import android.app.ProgressDialog;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -32,6 +33,9 @@ public class LoginActivity extends AppCompatActivity {
     private TextInputEditText etEmail, etPassword;
     private Button btnLogin;
     private CheckBox cbRememberMe;
+    public static final String SHARED_PREFS = "settings";
+    public static final String REMEMBER_ME_KEY = "rememberMe";
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -75,6 +79,8 @@ public class LoginActivity extends AppCompatActivity {
                         public void onComplete(@NonNull Task<AuthResult> task) {
                             pd.dismiss();
                             if (task.isSuccessful()) {
+                                //Saves whether the user wants to stay logged in or not
+                                saveData();
                                 Log.i("Firebase", "loginUserWithEmailAndPassword: success");
                                 FirebaseUser user = FBRef.refAuth.getCurrentUser();
                                 Toast.makeText(LoginActivity.this, "Succesfully signed in!", Toast.LENGTH_SHORT).show();
@@ -89,7 +95,7 @@ public class LoginActivity extends AppCompatActivity {
                                 } else if (exp instanceof FirebaseAuthUserCollisionException) {
                                     Toast.makeText(LoginActivity.this, "User already exists", Toast.LENGTH_SHORT).show();
                                 } else if (exp instanceof FirebaseAuthInvalidCredentialsException) {
-                                    Toast.makeText(LoginActivity.this, "General authentication failure", Toast.LENGTH_SHORT).show();
+                                    Toast.makeText(LoginActivity.this, "Wrong password", Toast.LENGTH_SHORT).show();
                                 } else if (exp instanceof FirebaseNetworkException) {
                                     Toast.makeText(LoginActivity.this, "Network error. Please check your network", Toast.LENGTH_SHORT).show();
                                 } else {
@@ -98,6 +104,12 @@ public class LoginActivity extends AppCompatActivity {
                             }
                         }
                     });
-        // add to firebase
+    }
+    private void saveData() {
+        SharedPreferences sharedPreferences = getSharedPreferences(SHARED_PREFS, MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+
+        editor.putBoolean(REMEMBER_ME_KEY, cbRememberMe.isChecked());
+        editor.apply();
     }
 }
