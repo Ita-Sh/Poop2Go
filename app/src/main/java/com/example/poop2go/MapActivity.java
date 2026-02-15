@@ -80,8 +80,9 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         btnAddRestroom.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // To be implemented: Intent to AddRestroomActivity
                 Toast.makeText(MapActivity.this, "Opening 'Add Restroom' screen...", Toast.LENGTH_SHORT).show();
+                Intent intent = new Intent(MapActivity.this, AddRestroomActivity.class);
+                startActivity(intent);
             }
         });
     }
@@ -151,7 +152,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
      * Centers the map on the default location (Makif Alef).
      */
     private void moveToDefaultLocation() {
-        mMap.addMarker(new MarkerOptions().position(MAKIF_ALEF).title("Default Location: Tel Aviv"));
+        mMap.addMarker(new MarkerOptions().position(MAKIF_ALEF).title("Default Location: Makif Alef"));
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(MAKIF_ALEF, 16f));
     }
 

@@ -1,6 +1,6 @@
 package com.example.poop2go;
 
-public class Toilet {
+public class Restroom {
     private String toiletId;
     private String toiletName;
     private double longitude;
@@ -10,7 +10,7 @@ public class Toilet {
     private boolean isPaid;
     private boolean isSeparated;
 
-    public Toilet(){
+    public Restroom(){
         this.toiletId = "";
         this.toiletName = "";
         this.longitude = 0;
@@ -20,7 +20,8 @@ public class Toilet {
         this.isPaid = false;
         this.isSeparated = false;
     }    //default builder
-    public Toilet (String toiletName, double longitude, double latitude, String address, boolean isPaid, boolean isSeparated) {
+    public Restroom (String toiletId, String toiletName, double longitude, double latitude, String address, boolean isPaid, boolean isSeparated) {
+        this.toiletId = toiletId;
         this.toiletName = toiletName;
         this.longitude = longitude;
         this.latitude = latitude;
@@ -28,7 +29,6 @@ public class Toilet {
         this.isPaid = isPaid;
         this.isSeparated = isSeparated;
         this.avgRating = -1; //updated each time a review is added
-        this.toiletId = ""; //set automatically
     }
 
     public String getToiletId(){
