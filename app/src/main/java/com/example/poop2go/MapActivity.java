@@ -21,13 +21,26 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
 import android.location.Location;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
+
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
 
 public class MapActivity extends AppCompatActivity implements OnMapReadyCallback {
 
@@ -38,6 +51,9 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
 
     // Default location: Makif Alef
     private final LatLng MAKIF_ALEF = new LatLng(31.25218866868315, 34.800391651282624);
+
+    // Maps Restroom ID -> Google Maps Marker object
+    private HashMap<String, Marker> visibleMarkers = new HashMap<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -101,7 +117,20 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     @Override
     public void onMapReady(@NonNull GoogleMap googleMap) {
         mMap = googleMap;
-        checkLocationPermission();
+
+        // Ensure the window has focus before asking for permissions
+        getWindow().getDecorView().post(() -> {
+            checkLocationPermission();
+        });
+
+        // Triggered every time the user finishes moving the camera
+        // Used to show all restrooms on the screen
+        mMap.setOnCameraIdleListener(new GoogleMap.OnCameraIdleListener() {
+            @Override
+            public void onCameraIdle() {
+                retrieveRestroomsInView();
+            }
+        });
     }
 
     /**
@@ -172,5 +201,68 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                 moveToDefaultLocation();
             }
         }
+    }
+
+    /**
+     * Retrieves restrooms from Firebase and filters them based on screen visibility
+     * AND a minimum zoom level.
+     */
+    private void retrieveRestroomsInView() {
+        float currentZoom = mMap.getCameraPosition().zoom;
+
+        if (currentZoom < 15f) {
+            // Zoomed out: Clear everything
+            for (Marker m : visibleMarkers.values()) m.remove();
+            visibleMarkers.clear();
+            return;
+        }
+
+        DatabaseReference restroomRef = FirebaseDatabase.getInstance().getReference("Restrooms");
+        LatLngBounds curScreen = mMap.getProjection().getVisibleRegion().latLngBounds;
+
+        restroomRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                // Create a set of IDs currently in the database to track what should stay
+                HashSet<String> restroomsInQuery = new HashSet<>();
+
+                for (DataSnapshot data : snapshot.getChildren()) {
+                    Restroom restroom = data.getValue(Restroom.class);
+                    if (restroom == null) continue;
+
+                    String id = restroom.getToiletId();
+                    LatLng position = new LatLng(restroom.getLatitude(), restroom.getLongitude());
+
+                    if (curScreen.contains(position)) {
+                        restroomsInQuery.add(id);
+
+                        // ONLY add if the marker isn't already there
+                        if (!visibleMarkers.containsKey(id)) {
+                            Marker m = mMap.addMarker(new MarkerOptions()
+                                    .position(position)
+                                    .title(restroom.getToiletName())
+                                    .snippet("Tap for details")
+                                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)));
+                            visibleMarkers.put(id, m);
+                        }
+                    }
+                }
+
+                // Remove markers that are no longer in the view/database
+                Iterator<Map.Entry<String, Marker>> it = visibleMarkers.entrySet().iterator();
+                while (it.hasNext()) {
+                    Map.Entry<String, Marker> entry = it.next();
+                    if (!restroomsInQuery.contains(entry.getKey())) {
+                        entry.getValue().remove(); // Remove from map
+                        it.remove(); // Remove from HashMap
+                    }
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Toast.makeText(MapActivity.this, "Error: " + error.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 }

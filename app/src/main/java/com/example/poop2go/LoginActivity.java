@@ -31,7 +31,7 @@ import com.google.firebase.auth.FirebaseUser;
 public class LoginActivity extends AppCompatActivity {
 
     private TextInputEditText etEmail, etPassword;
-    private Button btnLogin;
+    private Button btnLogin, btnBack;
     private CheckBox cbRememberMe;
     public static final String SHARED_PREFS = "settings";
     public static final String REMEMBER_ME_KEY = "rememberMe";
@@ -48,12 +48,20 @@ public class LoginActivity extends AppCompatActivity {
         etPassword = findViewById(R.id.et_password);
         btnLogin = findViewById(R.id.btn_login);
         cbRememberMe = findViewById(R.id.cb_remember_me);
+        btnBack = findViewById(R.id.btn_back);
 
         // Set listener
         btnLogin.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 loginUser();
+            }
+        });
+
+        btnBack.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                finish();
             }
         });
     }

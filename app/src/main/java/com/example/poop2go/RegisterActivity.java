@@ -37,7 +37,7 @@ import java.util.Calendar;
 public class RegisterActivity extends AppCompatActivity {
 
     private TextInputEditText etName, etEmail, etPassword, etDob;
-    private Button btnRegister;
+    private Button btnRegister, btnBack;
     private CheckBox cbRememberMe;
 
     @Override
@@ -53,6 +53,7 @@ public class RegisterActivity extends AppCompatActivity {
         etDob = findViewById(R.id.et_dob);
         btnRegister = findViewById(R.id.btn_register);
         cbRememberMe = findViewById(R.id.cb_remember_me);
+        btnBack = findViewById(R.id.btn_back);
 
         // Show clickable date picker dialog when DOB field is clicked
         etDob.setOnClickListener(new View.OnClickListener() {
@@ -67,6 +68,13 @@ public class RegisterActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 registerUser();
+            }
+        });
+
+        btnBack.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                finish();
             }
         });
     }
