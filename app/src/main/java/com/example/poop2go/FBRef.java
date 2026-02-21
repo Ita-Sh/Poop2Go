@@ -9,7 +9,7 @@ public class FBRef {
 
     public static FirebaseDatabase FBDB = FirebaseDatabase.getInstance();
     public static DatabaseReference refUsers = FBDB.getReference("Users");
-    public static DatabaseReference refToilets = FBDB.getReference("Toilets");
+    public static DatabaseReference refRestrooms = FBDB.getReference("Restrooms");
 
 
 }

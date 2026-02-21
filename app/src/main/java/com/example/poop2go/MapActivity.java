@@ -8,8 +8,10 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -20,6 +22,7 @@ import androidx.core.content.ContextCompat;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.Projection;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
@@ -31,6 +34,7 @@ import android.location.Location;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -44,6 +48,7 @@ import java.util.Map;
 
 public class MapActivity extends AppCompatActivity implements OnMapReadyCallback {
 
+    // Elements for the regular map activity
     private GoogleMap mMap;
     private Button btnLogout, btnAddRestroom;
     private FusedLocationProviderClient fusedLocationClient;
@@ -55,6 +60,10 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     // Maps Restroom ID -> Google Maps Marker object
     private HashMap<String, Marker> visibleMarkers = new HashMap<>();
 
+    // Elements for the pop-up menu
+    private BottomSheetBehavior<View> sheetBehavior;
+    private TextView tvName, tvLocation, tvSeparated, tvPaid, tvRating;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -65,7 +74,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
 
         // Initialize UI components
         btnLogout = findViewById(R.id.btn_logout);
-        btnAddRestroom = findViewById(R.id.btn_add_restroom);
+        btnAddRestroom = findViewById(R.id.fab_add_restroom);
 
         // Set up the Map Fragment and request the map to be loaded asynchronously
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
@@ -101,6 +110,9 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                 startActivity(intent);
             }
         });
+
+        // Initialize the bottom sheet
+        initBottomSheet();
     }
 
     private void saveData() {
@@ -117,6 +129,8 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     @Override
     public void onMapReady(@NonNull GoogleMap googleMap) {
         mMap = googleMap;
+
+        setupMarkerClick();
 
         // Ensure the window has focus before asking for permissions
         getWindow().getDecorView().post(() -> {
@@ -243,6 +257,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                                     .title(restroom.getToiletName())
                                     .snippet("Tap for details")
                                     .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)));
+                            m.setTag(id);
                             visibleMarkers.put(id, m);
                         }
                     }
@@ -262,6 +277,103 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
                 Toast.makeText(MapActivity.this, "Error: " + error.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    // Methods for the pop-up menu of each restroom:
+    private void initBottomSheet() {
+        View bottomSheet = findViewById(R.id.restroom_bottom_sheet);
+        sheetBehavior = BottomSheetBehavior.from(bottomSheet);
+
+        // Set initial state to HIDDEN so it doesn't show until a marker is clicked
+        sheetBehavior.setHideable(true);
+        sheetBehavior.setState(BottomSheetBehavior.STATE_HIDDEN);
+
+        // This is how much of the card will show when it first appears
+        sheetBehavior.setPeekHeight(1750);
+
+        // Initialize UI elements within the sheet
+        tvName = findViewById(R.id.tv_detail_name);
+        tvLocation = findViewById(R.id.tv_detail_location);
+        tvSeparated = findViewById(R.id.tv_detail_separated);
+        tvPaid = findViewById(R.id.tv_detail_paid);
+        tvRating = findViewById(R.id.tv_detail_rating);
+    }
+
+    // Update your Marker Click Listener to trigger the sheet
+    private void setupMarkerClick() {
+        mMap.setOnMarkerClickListener(marker -> {
+            String restroomId = (String) marker.getTag();
+
+            if (restroomId != null) {
+                // Fetch the restroom details from Firebase
+                fetchSingleRestroom(restroomId);
+            }
+
+            // Return false to allow the default behavior (centering/showing title)
+            return false;
+        });
+    }
+
+    private void displayRestroomDetails(Restroom restroom) {
+        // This is where data would be retrieved from the Firebase Database using the ID
+
+        String restroomName = restroom.getToiletName();
+        String restroomLocation = restroom.getAddress();
+        boolean isSeparated = restroom.getIsSeparated();
+        boolean isPaid = restroom.getIsPaid();
+
+        // Placeholder data for demonstration:
+        tvName.setText(restroomName);
+        tvLocation.setText(restroomLocation);
+
+        if (isSeparated) {tvSeparated.setText("Yes");}
+        else {tvSeparated.setText("No");}
+
+        if (isPaid) {tvPaid.setText("Paid");}
+        else {tvPaid.setText("Free");}
+
+        double avgRating = restroom.getAvgRating();
+        if (avgRating == -1) { tvRating.setText("No Reviews yet"); }
+        else { tvRating.setText("Average Rating: ★ " + avgRating); }
+
+        // Open the sheet to its partial view (PEEKING)
+        sheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
+
+        LatLng markerPos = new LatLng(restroom.getLatitude(), restroom.getLongitude());
+
+        // Move the camera so that the marker is visible
+        // This is done by focusing the camera on a spot that is 450dp below the marker
+        Projection projection = mMap.getProjection();
+        android.graphics.Point markerPoint = projection.toScreenLocation(markerPos);
+        markerPoint.y += 450;
+        LatLng targetLatLng = projection.fromScreenLocation(markerPoint);
+        mMap.animateCamera(CameraUpdateFactory.newLatLng(targetLatLng));
+    }
+
+    private void fetchSingleRestroom(String restroomId) {
+        // Create a direct reference to the specific restroom ID
+        DatabaseReference specificRestroomRef = FBRef.refRestrooms.child(restroomId);
+
+        // Listener used to read the data once
+        specificRestroomRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                // Check if the data actually exists
+                if (snapshot.exists()) {
+                    // Map the data directly to your Restroom class
+                    Restroom restroom = snapshot.getValue(Restroom.class);
+
+                    if (restroom != null) {
+                        displayRestroomDetails(restroom);
+                    }
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Log.e("Firebase", "Error fetching restroom: " + error.getMessage());
             }
         });
     }
