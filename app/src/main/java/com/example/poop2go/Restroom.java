@@ -1,8 +1,11 @@
 package com.example.poop2go;
 
+import java.util.List;
+import com.google.firebase.database.PropertyName;
+
 public class Restroom {
-    private String toiletId;
-    private String toiletName;
+    private String restroomId;
+    private String restroomName;
     private double longitude;
     private double latitude;
     private String address;
@@ -11,8 +14,8 @@ public class Restroom {
     private boolean isSeparated;
 
     public Restroom(){
-        this.toiletId = "";
-        this.toiletName = "";
+        this.restroomId = "";
+        this.restroomName = "";
         this.longitude = 0;
         this.latitude = 0;
         this.address = "";
@@ -20,9 +23,9 @@ public class Restroom {
         this.isPaid = false;
         this.isSeparated = false;
     }    //default builder
-    public Restroom (String toiletId, String toiletName, double longitude, double latitude, String address, boolean isPaid, boolean isSeparated) {
-        this.toiletId = toiletId;
-        this.toiletName = toiletName;
+    public Restroom (String restroomId, String restroomName, double longitude, double latitude, String address, boolean isPaid, boolean isSeparated) {
+        this.restroomId = restroomId;
+        this.restroomName = restroomName;
         this.longitude = longitude;
         this.latitude = latitude;
         this.address = address;
@@ -31,11 +34,11 @@ public class Restroom {
         this.avgRating = -1; //updated each time a review is added
     }
 
-    public String getToiletId(){
-        return this.toiletId;
+    public String getRestroomId(){
+        return this.restroomId;
     }
-    public String getToiletName(){
-        return this.toiletName;
+    public String getRestroomName(){
+        return this.restroomName;
     }
     public double getLongitude(){
         return this.longitude;
@@ -56,12 +59,10 @@ public class Restroom {
         return this.isSeparated;
     }
 
-    public void setToiletId(String toiletId){
-        this.toiletId = toiletId;
+    public void setRestroomId(String toiletId){
+        this.restroomId = toiletId;
     }
-    public void setToiletName(String toiletName){
-        this.toiletName = toiletName;
-    }
+    public void setRestroomName(String restroomName){ this.restroomName = restroomName; }
     public void setLongitude(double longitude){
         this.longitude = longitude;
     }
@@ -78,25 +79,35 @@ public class Restroom {
         this.isSeparated = isSeparated;
     }
 
-    public void calcAvgRating(Review[] reviews){
-        double weight;
+    public void calcAvgRating(List<Review> reviews) {
+        if (reviews == null || reviews.isEmpty()) {
+            this.avgRating = -1;
+            return;
+        }
+
         double totalWeightedSum = 0.0;
         double totalWeight = 0.0;
         long currentTime = System.currentTimeMillis();
-        long reviewTime;
-        long timeDifferenceInDays;
-        double timeDifferenceInYears;
 
-        for (int i=0; i<reviews.length; i++){
-            Review review = reviews[i];
-            reviewTime = review.getCreatedAt().getTimestamp().getTime();
-            timeDifferenceInDays = (currentTime - reviewTime) / (1000 * 60 * 60 * 24);
-            timeDifferenceInYears = timeDifferenceInDays / 365.24;
-            weight = Math.pow(Math.E, -0.5 * timeDifferenceInYears);
+        for (Review review : reviews) {
+            long reviewTime = review.getTimestamp();
+
+            // Calculate age in years
+            double timeDifferenceInDays = (currentTime - reviewTime) / (1000.0 * 60 * 60 * 24);
+            double timeDifferenceInYears = timeDifferenceInDays / 365.24;
+
+            // Exponential decay weight
+            double weight = Math.pow(Math.E, -0.5 * timeDifferenceInYears);
+
             totalWeightedSum += review.getRating() * weight;
             totalWeight += weight;
         }
-        this.avgRating = totalWeightedSum / totalWeight;
+
+        if (totalWeight > 0) {
+            this.avgRating = totalWeightedSum / totalWeight;
+        } else {
+            this.avgRating = -1;
+        }
     }
 // Gets all the reviews for the toilet and calculates the weighted average of them, using algorithm 3 in section 4.
 

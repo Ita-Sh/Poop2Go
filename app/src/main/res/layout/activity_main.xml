@@ -52,7 +52,8 @@
             android:layout_marginBottom="16dp"
             android:layout_marginHorizontal="20dp"/>
 
-        <!-- Enter Without Account Button -->
+        <!-- Enter Without Account Button, Unfinished -->
+        <!--
         <Button
             android:id="@+id/btnEnterWithoutAccount"
             android:layout_width="match_parent"
@@ -63,6 +64,7 @@
             android:backgroundTint="#2156DD"
             android:padding="16dp"
             android:layout_marginHorizontal="20dp"/>
+            -->
 
 
     </LinearLayout>

@@ -40,7 +40,8 @@ public class MainActivity extends AppCompatActivity {
         // Initialize buttons
         btnLogin = findViewById(R.id.btnLogin);
         btnRegister = findViewById(R.id.btnRegister);
-        btnEnterWithoutAccount = findViewById(R.id.btnEnterWithoutAccount);
+
+        // btnEnterWithoutAccount = findViewById(R.id.btnEnterWithoutAccount);
 
         // Set click listeners
         btnLogin.setOnClickListener(v -> {
@@ -53,8 +54,11 @@ public class MainActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
+        /*
         btnEnterWithoutAccount.setOnClickListener(v -> {
             // Handle guest entry
         });
+
+         */
     }
 }

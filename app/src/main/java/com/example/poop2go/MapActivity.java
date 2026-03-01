@@ -41,9 +41,11 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 public class MapActivity extends AppCompatActivity implements OnMapReadyCallback {
@@ -63,6 +65,9 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     // Elements for the pop-up menu
     private BottomSheetBehavior<View> sheetBehavior;
     private TextView tvName, tvLocation, tvSeparated, tvPaid, tvRating;
+    private Button btnReviews;
+    private String selectedRestroomId;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -240,11 +245,11 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                 // Create a set of IDs currently in the database to track what should stay
                 HashSet<String> restroomsInQuery = new HashSet<>();
 
-                for (DataSnapshot data : snapshot.getChildren()) {
-                    Restroom restroom = data.getValue(Restroom.class);
+                for (DataSnapshot postSnapshot : snapshot.getChildren()) {
+                    Restroom restroom = postSnapshot.getValue(Restroom.class);
                     if (restroom == null) continue;
 
-                    String id = restroom.getToiletId();
+                    String id = restroom.getRestroomId();
                     LatLng position = new LatLng(restroom.getLatitude(), restroom.getLongitude());
 
                     if (curScreen.contains(position)) {
@@ -254,7 +259,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                         if (!visibleMarkers.containsKey(id)) {
                             Marker m = mMap.addMarker(new MarkerOptions()
                                     .position(position)
-                                    .title(restroom.getToiletName())
+                                    .title(restroom.getRestroomName())
                                     .snippet("Tap for details")
                                     .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)));
                             m.setTag(id);
@@ -299,6 +304,23 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         tvSeparated = findViewById(R.id.tv_detail_separated);
         tvPaid = findViewById(R.id.tv_detail_paid);
         tvRating = findViewById(R.id.tv_detail_rating);
+        btnReviews = findViewById(R.id.btn_show_reviews);
+
+
+        btnReviews.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (selectedRestroomId != null) {
+                    // Create the Intent to move to ReviewsActivity
+                    Intent intent = new Intent(MapActivity.this, ReviewsActivity.class);
+
+                    // Pass the restroomId so the next screen knows what to load
+                    intent.putExtra("RESTROOM_ID", selectedRestroomId);
+
+                    startActivity(intent);
+                }
+            }
+        });
     }
 
     // Update your Marker Click Listener to trigger the sheet
@@ -317,41 +339,41 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     }
 
     private void displayRestroomDetails(Restroom restroom) {
-        // This is where data would be retrieved from the Firebase Database using the ID
+        selectedRestroomId = restroom.getRestroomId();
 
-        String restroomName = restroom.getToiletName();
-        String restroomLocation = restroom.getAddress();
-        boolean isSeparated = restroom.getIsSeparated();
-        boolean isPaid = restroom.getIsPaid();
+        // Update basic UI
+        tvName.setText(restroom.getRestroomName());
+        tvLocation.setText(restroom.getAddress());
+        tvSeparated.setText(restroom.getIsSeparated() ? "Yes" : "No");
+        tvPaid.setText(restroom.getIsPaid() ? "Yes" : "No");
+        tvRating.setText("Rating: ★ Loading...");
 
-        // Placeholder data for demonstration:
-        tvName.setText(restroomName);
-        tvLocation.setText(restroomLocation);
+        // Fetch live reviews for weighted average
+        FirebaseDatabase.getInstance().getReference("Reviews").child(selectedRestroomId)
+                .addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot snapshot) {
+                        List<Review> reviews = new ArrayList<>();
+                        for (DataSnapshot ds : snapshot.getChildren()) {
+                            Review r = ds.getValue(Review.class);
+                            if (r != null) reviews.add(r);
+                        }
 
-        if (isSeparated) {tvSeparated.setText("Yes");}
-        else {tvSeparated.setText("No");}
+                        if (reviews.isEmpty()) {
+                            tvRating.setText("Rating: ★ No reviews yet");
+                        } else {
+                            restroom.calcAvgRating(reviews);
+                            tvRating.setText("Rating: ★ " + String.format("%.1f", restroom.getAvgRating()));
+                        }
+                    }
+                    @Override public void onCancelled(@NonNull DatabaseError e) {}
+                });
 
-        if (isPaid) {tvPaid.setText("Paid");}
-        else {tvPaid.setText("Free");}
+        // Stable Camera: Center on marker, then nudge
+        mMap.animateCamera(CameraUpdateFactory.scrollBy(0, 250));
 
-        double avgRating = restroom.getAvgRating();
-        if (avgRating == -1) { tvRating.setText("No Reviews yet"); }
-        else { tvRating.setText("Average Rating: ★ " + avgRating); }
-
-        // Open the sheet to its partial view (PEEKING)
         sheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
-
-        LatLng markerPos = new LatLng(restroom.getLatitude(), restroom.getLongitude());
-
-        // Move the camera so that the marker is visible
-        // This is done by focusing the camera on a spot that is 450dp below the marker
-        Projection projection = mMap.getProjection();
-        android.graphics.Point markerPoint = projection.toScreenLocation(markerPos);
-        markerPoint.y += 450;
-        LatLng targetLatLng = projection.fromScreenLocation(markerPoint);
-        mMap.animateCamera(CameraUpdateFactory.newLatLng(targetLatLng));
     }
-
     private void fetchSingleRestroom(String restroomId) {
         // Create a direct reference to the specific restroom ID
         DatabaseReference specificRestroomRef = FBRef.refRestrooms.child(restroomId);

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="8dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="2dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:id="@+id/tv_reviewer_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="User Name"
+            android:textStyle="bold"
+            android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/tv_review_rating"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Rating: ★ 0"
+            android:textColor="#FFD700"
+            android:layout_marginTop="4dp" />
+
+        <TextView
+            android:id="@+id/tv_review_content"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Review content goes here..."
+            android:layout_marginTop="8dp"
+            android:textColor="#333333" />
+
+    </LinearLayout>
+</androidx.cardview.widget.CardView>
