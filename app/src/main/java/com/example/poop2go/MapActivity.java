@@ -11,6 +11,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -48,6 +49,20 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.net.Uri;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
+import com.google.firebase.auth.FirebaseAuth;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+
 public class MapActivity extends AppCompatActivity implements OnMapReadyCallback {
 
     // Elements for the regular map activity
@@ -65,8 +80,17 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     // Elements for the pop-up menu
     private BottomSheetBehavior<View> sheetBehavior;
     private TextView tvName, tvLocation, tvSeparated, tvPaid, tvRating;
-    private Button btnReviews;
+    private Button btnReviews, btnPhotos;
+    private ProgressBar uploadProgressBar;
     private String selectedRestroomId;
+
+    // Elements for the Storage of images in Firebase Storage
+    private ActivityResultLauncher<String> galleryLauncher;
+
+    // Elements for the display of images in Firebase Storage
+    private RecyclerView rvPhotos;
+    private PhotoAdapter photoAdapter;
+    private List<Photo> restroomPhotosList = new ArrayList<>();
 
 
     @Override
@@ -118,8 +142,19 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
 
         // Initialize the bottom sheet
         initBottomSheet();
+
+        // `
+        galleryLauncher = registerForActivityResult(
+                new ActivityResultContracts.GetContent(),
+                uri -> {
+                    if (uri != null) {
+                        handleImageUpload(uri);
+                    }
+                }
+        );
     }
 
+    // Saves the user's choice to not stay logged in
     private void saveData() {
         SharedPreferences sharedPreferences = getSharedPreferences(SHARED_PREFS, MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPreferences.edit();
@@ -128,9 +163,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         editor.apply();
     }
 
-    /**
-     * This callback is triggered when the map is ready to be used.
-     */
+    // This callback is triggered when the map is ready to be used.
     @Override
     public void onMapReady(@NonNull GoogleMap googleMap) {
         mMap = googleMap;
@@ -152,9 +185,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         });
     }
 
-    /**
-     * Checks if the app has permission to access the device location.
-     */
+    // Checks if the app has permission to access the device location.
     private void checkLocationPermission() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED) {
@@ -167,10 +198,8 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                     LOCATION_PERMISSION_REQUEST_CODE);
         }
     }
+    // Enables the 'My Location' layer on the map and zooms to the current position.
 
-    /**
-     * Enables the 'My Location' layer on the map and zooms to the current position.
-     */
     private void enableUserLocation() {
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED) {
@@ -196,17 +225,14 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                     }
                 });
     }
-    /**
-     * Centers the map on the default location (Makif Alef).
-     */
+
+    // Centers the map on the default location (Makif Alef).
     private void moveToDefaultLocation() {
         mMap.addMarker(new MarkerOptions().position(MAKIF_ALEF).title("Default Location: Makif Alef"));
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(MAKIF_ALEF, 16f));
     }
 
-    /**
-     * Handles the result of the permission request.
-     */
+    // Handles the result of the permission request.
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
@@ -222,10 +248,8 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         }
     }
 
-    /**
-     * Retrieves restrooms from Firebase and filters them based on screen visibility
-     * AND a minimum zoom level.
-     */
+    // Retrieves restrooms from Firebase and filters them based on screen visibility
+    // AND a minimum zoom level.
     private void retrieveRestroomsInView() {
         float currentZoom = mMap.getCameraPosition().zoom;
 
@@ -305,8 +329,20 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         tvPaid = findViewById(R.id.tv_detail_paid);
         tvRating = findViewById(R.id.tv_detail_rating);
         btnReviews = findViewById(R.id.btn_show_reviews);
+        btnPhotos = findViewById(R.id.btn_add_photos);
+        uploadProgressBar = findViewById(R.id.upload_progress_bar);
 
+        // Initialize the RecyclerView for displaying images
+        rvPhotos = findViewById(R.id.rv_restroom_photos);
+        photoAdapter = new PhotoAdapter(this, restroomPhotosList);
+        rvPhotos.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
+        rvPhotos.setAdapter(photoAdapter);
 
+        // This makes the gallery "snap" to one photo at a time
+        androidx.recyclerview.widget.PagerSnapHelper snapHelper = new androidx.recyclerview.widget.PagerSnapHelper();
+        snapHelper.attachToRecyclerView(rvPhotos);
+
+        // Handle the 'Reviews' button click
         btnReviews.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -319,6 +355,14 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
 
                     startActivity(intent);
                 }
+            }
+        });
+
+        // Handle the 'Add Photos' button click
+        btnPhotos.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                openGalleryToSelectPhoto();
             }
         });
     }
@@ -338,6 +382,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         });
     }
 
+    // Display the details of the selected restroom
     private void displayRestroomDetails(Restroom restroom) {
         selectedRestroomId = restroom.getRestroomId();
 
@@ -372,8 +417,13 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         // Stable Camera: Center on marker, then nudge
         mMap.animateCamera(CameraUpdateFactory.scrollBy(0, 250));
 
+        // Trigger the photo fetch
+        fetchRestroomPhotos(selectedRestroomId);
+
         sheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
     }
+
+    // Fetch the data for a specific restroom
     private void fetchSingleRestroom(String restroomId) {
         // Create a direct reference to the specific restroom ID
         DatabaseReference specificRestroomRef = FBRef.refRestrooms.child(restroomId);
@@ -398,5 +448,127 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                 Log.e("Firebase", "Error fetching restroom: " + error.getMessage());
             }
         });
+    }
+
+    // Opens the gallery to select a photo
+    private void openGalleryToSelectPhoto() {
+        // Safety check: ensure we actually have a restroom selected before picking a photo
+        if (selectedRestroomId != null) {
+            // Disable the button to prevent multiple clicks
+            btnPhotos.setEnabled(false);
+            // This launches the system gallery picker for images
+            galleryLauncher.launch("image/*");
+        } else {
+            Toast.makeText(this, "Please select a restroom first", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    // Upload the image to Firebase Storage
+    private void handleImageUpload(Uri uri) {
+        // Show the progress bar
+        uploadProgressBar.setVisibility(View.VISIBLE);
+
+        // Compress the image before uploading
+        byte[] compressedData = compressImage(uri);
+
+        if (compressedData == null) {
+            // Error occurred during compression
+            uploadProgressBar.setVisibility(View.GONE);
+            // Re-enable the button
+            btnPhotos.setEnabled(true);
+            Toast.makeText(this, "Image compression failed", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String photoId = FirebaseDatabase.getInstance().getReference().push().getKey();
+        StorageReference fileRef = FBRef.refStorage.child(selectedRestroomId).child(photoId + ".jpg");
+
+        // Upload the compressed image
+        fileRef.putBytes(compressedData).addOnSuccessListener(taskSnapshot -> {
+            fileRef.getDownloadUrl().addOnSuccessListener(downloadUri -> {
+                // Save the Image to Realtime Database
+                savePhotoMetadata(photoId, downloadUri.toString());
+            });
+        }).addOnFailureListener(e -> {
+            // Hide the progress bar
+            uploadProgressBar.setVisibility(View.GONE);
+            // Re-enable the button
+            btnPhotos.setEnabled(true);
+            Toast.makeText(this, "Upload failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        });
+    }
+
+    // Save the Image to Realtime Database
+    private void savePhotoMetadata(String photoId, String downloadUrl) {
+        String uId = FirebaseAuth.getInstance().getUid();
+        long timestamp = System.currentTimeMillis();
+
+        Photo newPhoto = new Photo(photoId, selectedRestroomId, uId, downloadUrl, timestamp);
+
+        FBRef.refPhotos
+                .child(selectedRestroomId)
+                .child(photoId)
+                .setValue(newPhoto)
+                .addOnSuccessListener(aVoid -> {
+                    // Hide the progress bar only when EVERYTHING is done
+                    uploadProgressBar.setVisibility(View.GONE);
+                    // Re-enable the button
+                    btnPhotos.setEnabled(true);
+                    Toast.makeText(this, "Photo uploaded successfully!", Toast.LENGTH_SHORT).show();
+                });
+    }
+
+    // Method for compressing an image to a max of 100KB
+    private byte[] compressImage(Uri uri) {
+        try {
+            InputStream inputStream = getContentResolver().openInputStream(uri);
+            Bitmap original = BitmapFactory.decodeStream(inputStream);
+
+            int quality = 100;
+            byte[] imageData;
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+            // Initial compression
+            original.compress(Bitmap.CompressFormat.JPEG, quality, baos);
+            imageData = baos.toByteArray();
+
+            // Loop to reduce quality until size is under 100KB
+            while (imageData.length > 100 * 1024 && quality > 10) {
+                baos.reset(); // Clear the stream
+                quality -= 10; // Reduce quality by 10%
+                original.compress(Bitmap.CompressFormat.JPEG, quality, baos);
+                imageData = baos.toByteArray();
+            }
+
+            return imageData;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    // Fetch the photos for a specific restroom
+    private void fetchRestroomPhotos(String rId) {
+        FirebaseDatabase.getInstance().getReference("RestroomPhotos").child(rId)
+                .addValueEventListener(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot snapshot) {
+                        restroomPhotosList.clear();
+                        for (DataSnapshot ds : snapshot.getChildren()) {
+                            // Assuming your Photo.java matches the DB structure
+                            Photo p = ds.getValue(Photo.class);
+                            if (p != null) restroomPhotosList.add(p);
+                        }
+                        photoAdapter.notifyDataSetChanged();
+
+                        // Hide the gallery if there are no photos to show
+                        rvPhotos.setVisibility(restroomPhotosList.isEmpty() ? View.GONE : View.VISIBLE);
+                    }
+
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError e) {
+                        Log.e("Firebase", "Photo fetch failed: " + e.getMessage());
+                    }
+                });
     }
 }

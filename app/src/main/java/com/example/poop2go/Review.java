@@ -19,6 +19,7 @@ public class Review {
         this.timestamp = timestamp;
     }
 
+    // Getters and Setters
     public String getReviewId() { return reviewId; }
     public String getRestroomId() { return restroomId; }
     public String getUId() { return uId; }

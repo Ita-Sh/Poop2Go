@@ -34,6 +34,7 @@ public class Restroom {
         this.avgRating = -1; //updated each time a review is added
     }
 
+    // Getters and Setters
     public String getRestroomId(){
         return this.restroomId;
     }
@@ -79,6 +80,7 @@ public class Restroom {
         this.isSeparated = isSeparated;
     }
 
+    // Gets all the reviews for the toilet and calculates the weighted average of them
     public void calcAvgRating(List<Review> reviews) {
         if (reviews == null || reviews.isEmpty()) {
             this.avgRating = -1;
@@ -109,6 +111,4 @@ public class Restroom {
             this.avgRating = -1;
         }
     }
-// Gets all the reviews for the toilet and calculates the weighted average of them, using algorithm 3 in section 4.
-
 }

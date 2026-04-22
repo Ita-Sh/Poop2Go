@@ -16,6 +16,7 @@ public class User {
         this.dateOfBirth = dateOfBirth;
     }
 
+    // Getters and Setters
     public String getUId(){
         return this.uId;
     }
