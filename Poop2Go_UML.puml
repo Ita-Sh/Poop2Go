@@ -1,0 +1,463 @@
+@startuml
+class com.example.poop2go.MapActivity {
+- GoogleMap mMap
+- Button btnLogout
+- FusedLocationProviderClient fusedLocationClient
+- {static} int LOCATION_PERMISSION_REQUEST_CODE
+- LatLng MAKIF_ALEF
+- HashMap<String,Marker> visibleMarkers
+- BottomSheetBehavior<View> sheetBehavior
+- TextView tvName
+- Button btnReviews
+- ProgressBar uploadProgressBar
+- String selectedRestroomId
+- ActivityResultLauncher<String> galleryLauncher
+- RecyclerView rvPhotos
+- PhotoAdapter photoAdapter
+- List<Photo> restroomPhotosList
+# void onCreate(Bundle)
+- void saveData()
++ void onMapReady(GoogleMap)
+- void checkLocationPermission()
+- void enableUserLocation()
+- void moveToDefaultLocation()
++ void onRequestPermissionsResult(int,String[],int[])
+- void retrieveRestroomsInView()
+- void initBottomSheet()
+- void setupMarkerClick()
+- void displayRestroomDetails(Restroom)
+- void fetchSingleRestroom(String)
+- void openGalleryToSelectPhoto()
+- void handleImageUpload(Uri)
+- void savePhotoMetadata(String,String)
+- byte[] compressImage(Uri)
+- void fetchRestroomPhotos(String)
+}
+
+
+class com.example.poop2go.databinding.ItemReviewBinding {
+- CardView rootView
++ TextView tvReviewContent
++ TextView tvReviewRating
++ TextView tvReviewerName
++ CardView getRoot()
++ {static} ItemReviewBinding inflate(LayoutInflater)
++ {static} ItemReviewBinding inflate(LayoutInflater,ViewGroup,boolean)
++ {static} ItemReviewBinding bind(View)
+}
+
+
+class com.example.poop2go.databinding.ActivityAddReviewBinding {
+- ConstraintLayout rootView
++ Button btnCancelReview
++ Button btnConfirmReview
++ EditText etReviewContent
++ RatingBar rbNewRating
++ ConstraintLayout getRoot()
++ {static} ActivityAddReviewBinding inflate(LayoutInflater)
++ {static} ActivityAddReviewBinding inflate(LayoutInflater,ViewGroup,boolean)
++ {static} ActivityAddReviewBinding bind(View)
+}
+
+
+class com.example.poop2go.AddReviewActivity {
+- RatingBar rb
+- EditText et
+- String restroomId
+# void onCreate(Bundle)
+- void submit()
+}
+
+
+class com.example.poop2go.Review {
+- String reviewId
+- String restroomId
+- String uId
+- int rating
+- String comment
+- long timestamp
++ String getReviewId()
++ String getRestroomId()
++ String getUId()
++ int getRating()
++ String getComment()
++ long getTimestamp()
++ void setReviewId(String)
++ void setRestroomId(String)
++ void setUId(String)
++ void setRating(int)
++ void setComment(String)
++ void setTimestamp(long)
+}
+
+
+class com.example.poop2go.MainActivity {
+- Button btnLogin
+~ Intent intent
+# void onCreate(Bundle)
+}
+
+
+class com.example.poop2go.FBRef {
++ {static} FirebaseAuth refAuth
++ {static} FirebaseDatabase FBDB
++ {static} DatabaseReference refUsers
++ {static} DatabaseReference refRestrooms
++ {static} DatabaseReference refReviews
++ {static} DatabaseReference refPhotos
++ {static} FirebaseStorage FBStorage
++ {static} StorageReference refStorage
+}
+
+class com.example.poop2go.MapPickerActivity {
+- GoogleMap mMap
+- LatLng selectedLatLng
+- Marker currentMarker
+- FusedLocationProviderClient fusedLocationClient
+# void onCreate(Bundle)
++ void onMapReady(GoogleMap)
+- void updateMarker(LatLng)
+}
+
+
+class com.example.poop2go.LoginActivity {
+- TextInputEditText etEmail
+- Button btnLogin
+- CheckBox cbRememberMe
++ {static} String SHARED_PREFS
++ {static} String REMEMBER_ME_KEY
+# void onCreate(Bundle)
+- void loginUser()
+- void saveData()
+}
+
+
+class com.example.poop2go.RegisterActivity {
+- TextInputEditText etName
+- Button btnRegister
+- CheckBox cbRememberMe
+# void onCreate(Bundle)
+- void showDatePickerDialog()
+- void registerUser()
+- void saveData()
+- void saveUserToFBDB(String,String,String)
+}
+
+
+class com.example.poop2go.databinding.ActivityFullScreenPhotoBinding {
+- RelativeLayout rootView
++ ImageView ivFullPhoto
++ TextView tvUploaderName
++ RelativeLayout getRoot()
++ {static} ActivityFullScreenPhotoBinding inflate(LayoutInflater)
++ {static} ActivityFullScreenPhotoBinding inflate(LayoutInflater,ViewGroup,boolean)
++ {static} ActivityFullScreenPhotoBinding bind(View)
+}
+
+
+class com.example.poop2go.Restroom {
+- String restroomId
+- String restroomName
+- double longitude
+- double latitude
+- String address
+- double avgRating
+- boolean isPaid
+- boolean isSeparated
++ String getRestroomId()
++ String getRestroomName()
++ double getLongitude()
++ double getLatitude()
++ String getAddress()
++ double getAvgRating()
++ boolean getIsPaid()
++ boolean getIsSeparated()
++ void setRestroomId(String)
++ void setRestroomName(String)
++ void setLongitude(double)
++ void setLatitude(double)
++ void setAddress(String)
++ void setIsPaid(boolean)
++ void setIsSeparated(boolean)
++ void calcAvgRating(List<Review>)
+}
+
+
+class com.example.poop2go.databinding.ItemPhotoBinding {
+- CardView rootView
++ ImageView ivItemPhoto
++ CardView getRoot()
++ {static} ItemPhotoBinding inflate(LayoutInflater)
++ {static} ItemPhotoBinding inflate(LayoutInflater,ViewGroup,boolean)
++ {static} ItemPhotoBinding bind(View)
+}
+
+
+class com.example.poop2go.databinding.ActivityMapPickerBinding {
+- ConstraintLayout rootView
++ Button btnBack
++ Button btnConfirmLocation
++ ConstraintLayout main
++ ConstraintLayout getRoot()
++ {static} ActivityMapPickerBinding inflate(LayoutInflater)
++ {static} ActivityMapPickerBinding inflate(LayoutInflater,ViewGroup,boolean)
++ {static} ActivityMapPickerBinding bind(View)
+}
+
+
+class com.example.poop2go.ReviewAdapter {
+- List<Review> reviewsList
+- Map<String,String> nameCache
++ ReviewViewHolder onCreateViewHolder(ViewGroup,int)
++ void onBindViewHolder(ReviewViewHolder,int)
++ int getItemCount()
+}
+
+
+class com.example.poop2go.ReviewAdapter$ReviewViewHolder {
+~ TextView tvName
+}
+
+class com.example.poop2go.databinding.ActivityMainBinding {
+- ConstraintLayout rootView
++ Button btnLogin
++ Button btnRegister
++ ConstraintLayout main
++ TextView tvTitle
++ ConstraintLayout getRoot()
++ {static} ActivityMainBinding inflate(LayoutInflater)
++ {static} ActivityMainBinding inflate(LayoutInflater,ViewGroup,boolean)
++ {static} ActivityMainBinding bind(View)
+}
+
+
+class com.example.poop2go.databinding.ActivityMapBinding {
+- CoordinatorLayout rootView
++ Button btnLogout
++ ExtendedFloatingActionButton fabAddRestroom
++ CoordinatorLayout getRoot()
++ {static} ActivityMapBinding inflate(LayoutInflater)
++ {static} ActivityMapBinding inflate(LayoutInflater,ViewGroup,boolean)
++ {static} ActivityMapBinding bind(View)
+}
+
+
+class com.example.poop2go.ExampleUnitTest {
++ void addition_isCorrect()
+}
+
+class com.example.poop2go.databinding.ActivityLoginBinding {
+- ConstraintLayout rootView
++ MaterialButton btnBack
++ MaterialButton btnLogin
++ CheckBox cbRememberMe
++ TextInputEditText etEmail
++ TextInputEditText etPassword
++ ConstraintLayout main
++ TextInputLayout tilEmail
++ TextInputLayout tilPassword
++ TextView tvTitle
++ ConstraintLayout getRoot()
++ {static} ActivityLoginBinding inflate(LayoutInflater)
++ {static} ActivityLoginBinding inflate(LayoutInflater,ViewGroup,boolean)
++ {static} ActivityLoginBinding bind(View)
+}
+
+
+class com.example.poop2go.databinding.ActivityRegisterBinding {
+- ConstraintLayout rootView
++ MaterialButton btnBack
++ MaterialButton btnRegister
++ CheckBox cbRememberMe
++ TextInputEditText etDob
++ TextInputEditText etEmail
++ TextInputEditText etName
++ TextInputEditText etPassword
++ ConstraintLayout main
++ TextInputLayout tilDob
++ TextInputLayout tilEmail
++ TextInputLayout tilName
++ TextInputLayout tilPassword
++ TextView tvRegisterTitle
++ ConstraintLayout getRoot()
++ {static} ActivityRegisterBinding inflate(LayoutInflater)
++ {static} ActivityRegisterBinding inflate(LayoutInflater,ViewGroup,boolean)
++ {static} ActivityRegisterBinding bind(View)
+}
+
+
+class com.example.poop2go.PhotoAdapter {
+- List<Photo> photoList
+- Context context
++ PhotoViewHolder onCreateViewHolder(ViewGroup,int)
++ void onBindViewHolder(PhotoViewHolder,int)
++ int getItemCount()
+}
+
+
+class com.example.poop2go.PhotoAdapter$PhotoViewHolder {
+~ ImageView ivPhoto
+}
+
+class com.example.poop2go.ReviewsActivity {
+- RecyclerView rv
+- ReviewAdapter adapter
+- List<Review> list
+- TextView tvEmpty
+- String restroomId
+- Button btnNewReview
+# void onCreate(Bundle)
+}
+
+
+class com.example.poop2go.databinding.ActivityReviewsBinding {
+- ConstraintLayout rootView
++ Button btnAddReview
++ Button btnBack
++ RecyclerView rvReviewsList
++ TextView tvNoReviews
++ ConstraintLayout getRoot()
++ {static} ActivityReviewsBinding inflate(LayoutInflater)
++ {static} ActivityReviewsBinding inflate(LayoutInflater,ViewGroup,boolean)
++ {static} ActivityReviewsBinding bind(View)
+}
+
+
+class com.example.poop2go.FullScreenPhotoActivity {
+# void onCreate(Bundle)
+}
+
+class com.example.poop2go.User {
+- String uId
+- String name
+- String dateOfBirth
++ String getUId()
++ String getName()
++ String getDateOfBirth()
++ void setUId(String)
++ void setName(String)
++ void setDateOfBirth(String)
+}
+
+
+class com.example.poop2go.Photo {
+- String photoId
+- String restroomId
+- String uId
+- String downloadUrl
+- long timestamp
++ String getPhotoId()
++ String getRestroomId()
++ String getUId()
++ String getDownloadUrl()
++ long getTimestamp()
++ void setPhotoId(String)
++ void setRestroomId(String)
++ void setUId(String)
++ void setDownloadUrl(String)
++ void setTimestamp(long)
+}
+
+
+class com.example.poop2go.databinding.ActivityAddRestroomBinding {
+- ConstraintLayout rootView
++ Button btnAddPhotos
++ Button btnBack
++ Button btnConfirm
++ Button btnPickOnMap
++ TextInputEditText etLocation
++ TextInputEditText etRestroomName
++ LinearLayout llCoordinatesDisplay
++ ConstraintLayout main
++ SwitchCompat swIsPaid
++ SwitchCompat swIsSeparated
++ TextInputLayout tilLocation
++ TextInputLayout tilRestroomName
++ TextView tvAddTitle
++ TextView tvCoordinatesDisplay
++ ProgressBar uploadProgressBarAdd
++ ConstraintLayout getRoot()
++ {static} ActivityAddRestroomBinding inflate(LayoutInflater)
++ {static} ActivityAddRestroomBinding inflate(LayoutInflater,ViewGroup,boolean)
++ {static} ActivityAddRestroomBinding bind(View)
+}
+
+
+class com.example.poop2go.databinding.LayoutRestroomDetailsBinding {
+- NestedScrollView rootView
++ Button btnAddPhotos
++ Button btnShowReviews
++ NestedScrollView restroomBottomSheet
++ RecyclerView rvRestroomPhotos
++ TextView tvDetailLocation
++ TextView tvDetailName
++ TextView tvDetailPaid
++ TextView tvDetailRating
++ TextView tvDetailSeparated
++ ProgressBar uploadProgressBar
++ NestedScrollView getRoot()
++ {static} LayoutRestroomDetailsBinding inflate(LayoutInflater)
++ {static} LayoutRestroomDetailsBinding inflate(LayoutInflater,ViewGroup,boolean)
++ {static} LayoutRestroomDetailsBinding bind(View)
+}
+
+
+class com.example.poop2go.ExampleInstrumentedTest {
++ void useAppContext()
+}
+
+class com.example.poop2go.AddRestroomActivity {
+- TextView tvCoordinates
+- Button btnPickMap
+- EditText etRestroomName
+- SwitchCompat swIsSeparated
+- String currentRestroomId
+- StorageReference storageRef
+- ActivityResultLauncher<String> galleryLauncher
+- ProgressBar uploadProgressBar
+- List<Uri> pendingImageUris
+- int uploadCount
+- double selectedLat
+- ActivityResultLauncher<Intent> mapPickerLauncher
+# void onCreate(Bundle)
+- void saveRestroomToDatabase()
+- void uploadPhotosInQueue()
+- void uploadSinglePhoto(Uri)
+- void savePhotoMetadataAndCheckProgress(String,String)
+- void checkUploadProgress()
+- byte[] compressImage(Uri)
+}
+
+
+
+
+com.google.android.gms.maps.OnMapReadyCallback <|.. com.example.poop2go.MapActivity
+androidx.appcompat.app.AppCompatActivity <|-- com.example.poop2go.MapActivity
+androidx.viewbinding.ViewBinding <|.. com.example.poop2go.databinding.ItemReviewBinding
+androidx.viewbinding.ViewBinding <|.. com.example.poop2go.databinding.ActivityAddReviewBinding
+androidx.appcompat.app.AppCompatActivity <|-- com.example.poop2go.AddReviewActivity
+androidx.appcompat.app.AppCompatActivity <|-- com.example.poop2go.MainActivity
+com.google.android.gms.maps.OnMapReadyCallback <|.. com.example.poop2go.MapPickerActivity
+androidx.fragment.app.FragmentActivity <|-- com.example.poop2go.MapPickerActivity
+androidx.appcompat.app.AppCompatActivity <|-- com.example.poop2go.LoginActivity
+androidx.appcompat.app.AppCompatActivity <|-- com.example.poop2go.RegisterActivity
+androidx.viewbinding.ViewBinding <|.. com.example.poop2go.databinding.ActivityFullScreenPhotoBinding
+androidx.viewbinding.ViewBinding <|.. com.example.poop2go.databinding.ItemPhotoBinding
+androidx.viewbinding.ViewBinding <|.. com.example.poop2go.databinding.ActivityMapPickerBinding
+com.example.poop2go.Adapter <|-- com.example.poop2go.ReviewAdapter
+com.example.poop2go.ReviewAdapter +.. com.example.poop2go.ReviewAdapter$ReviewViewHolder
+com.example.poop2go.ViewHolder <|-- com.example.poop2go.ReviewAdapter$ReviewViewHolder
+androidx.viewbinding.ViewBinding <|.. com.example.poop2go.databinding.ActivityMainBinding
+androidx.viewbinding.ViewBinding <|.. com.example.poop2go.databinding.ActivityMapBinding
+androidx.viewbinding.ViewBinding <|.. com.example.poop2go.databinding.ActivityLoginBinding
+androidx.viewbinding.ViewBinding <|.. com.example.poop2go.databinding.ActivityRegisterBinding
+com.example.poop2go.Adapter <|-- com.example.poop2go.PhotoAdapter
+com.example.poop2go.PhotoAdapter +.. com.example.poop2go.PhotoAdapter$PhotoViewHolder
+com.example.poop2go.ViewHolder <|-- com.example.poop2go.PhotoAdapter$PhotoViewHolder
+androidx.appcompat.app.AppCompatActivity <|-- com.example.poop2go.ReviewsActivity
+androidx.viewbinding.ViewBinding <|.. com.example.poop2go.databinding.ActivityReviewsBinding
+androidx.appcompat.app.AppCompatActivity <|-- com.example.poop2go.FullScreenPhotoActivity
+androidx.viewbinding.ViewBinding <|.. com.example.poop2go.databinding.ActivityAddRestroomBinding
+androidx.viewbinding.ViewBinding <|.. com.example.poop2go.databinding.LayoutRestroomDetailsBinding
+androidx.appcompat.app.AppCompatActivity <|-- com.example.poop2go.AddRestroomActivity
+@enduml

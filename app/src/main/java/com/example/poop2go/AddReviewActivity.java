@@ -28,7 +28,10 @@ public class AddReviewActivity extends AppCompatActivity {
         String comment = et.getText().toString().trim();
         int rating = (int) rb.getRating();
 
-        if (rating == 0 || comment.isEmpty()) return;
+        if (rating == 0 || comment.isEmpty()) {
+            Toast.makeText(this, "Please fill in all fields", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
         // Word count check
         if (comment.split("\\s+").length > 100) {
@@ -41,6 +44,9 @@ public class AddReviewActivity extends AppCompatActivity {
         String uId = FirebaseAuth.getInstance().getUid();
 
         Review r = new Review(rId, restroomId, uId, rating, comment, System.currentTimeMillis());
-        ref.child(rId).setValue(r).addOnSuccessListener(aVoid -> finish());
+        ref.child(rId).setValue(r).addOnSuccessListener(aVoid -> {
+            Toast.makeText(this, "Review Added Succesfully!", Toast.LENGTH_SHORT).show();
+            finish();
+        });
     }
 }

@@ -18,7 +18,7 @@ import com.google.firebase.auth.FirebaseUser;
 
 public class MainActivity extends AppCompatActivity {
 
-    private Button btnLogin, btnRegister, btnEnterWithoutAccount;
+    private Button btnLogin, btnRegister;
     Intent intent;
 
 
@@ -41,8 +41,6 @@ public class MainActivity extends AppCompatActivity {
         btnLogin = findViewById(R.id.btnLogin);
         btnRegister = findViewById(R.id.btnRegister);
 
-        // btnEnterWithoutAccount = findViewById(R.id.btnEnterWithoutAccount);
-
         // Set click listeners
         btnLogin.setOnClickListener(v -> {
             intent = new Intent(this, LoginActivity.class);
@@ -54,11 +52,5 @@ public class MainActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
-        /*
-        btnEnterWithoutAccount.setOnClickListener(v -> {
-            // Handle guest entry
-        });
-
-         */
     }
 }

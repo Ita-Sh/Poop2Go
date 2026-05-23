@@ -12,16 +12,18 @@ import java.util.List;
 import java.util.Map;
 
 public class ReviewAdapter extends RecyclerView.Adapter<ReviewAdapter.ReviewViewHolder> {
-    private List<Review> reviewsList;
+    private List<Review> reviewsList; // The list of reviews that should be displayed in the RecyclerView, taken from FB-RTDB
     private Map<String, String> nameCache = new HashMap<>(); // Prevents redundant lookups
 
     public ReviewAdapter(List<Review> reviewsList) {
+        // Simple builder method
         this.reviewsList = reviewsList;
     }
 
     @NonNull
     @Override
     public ReviewViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        // Method responsible for inflating the item_review.xml file from a blueprint into a real java View object
         View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_review, parent, false);
         return new ReviewViewHolder(v);
     }

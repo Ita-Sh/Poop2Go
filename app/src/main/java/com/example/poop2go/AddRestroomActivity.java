@@ -30,6 +30,8 @@ import com.google.firebase.storage.StorageReference;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 
 public class AddRestroomActivity extends AppCompatActivity {
 
@@ -41,6 +43,8 @@ public class AddRestroomActivity extends AppCompatActivity {
     private StorageReference storageRef;
     private ActivityResultLauncher<String> galleryLauncher;
     private ProgressBar uploadProgressBar;
+    private List<Uri> pendingImageUris = new ArrayList<>(); // For saving the Uris before uploading to firebase
+    private int uploadCount = 0;
 
     private double selectedLat = 0, selectedLng = 0;
 
@@ -78,12 +82,13 @@ public class AddRestroomActivity extends AppCompatActivity {
         btnBack = findViewById(R.id.btn_back);
         btnAddPhotos = findViewById(R.id.btn_add_photos);
 
-        // 3. Set up Gallery Launcher (Same as MapActivity)
+        // 3. Set up Gallery Launcher (Same as MapActivity, but the Uris aren't uploaded immediately)
         galleryLauncher = registerForActivityResult(
                 new ActivityResultContracts.GetContent(),
                 uri -> {
                     if (uri != null) {
-                        handleImageUpload(uri);
+                        pendingImageUris.add(uri);
+                        Toast.makeText(this, "Photo added to queue (" + pendingImageUris.size() + ")", Toast.LENGTH_SHORT).show();
                     }
                 }
         );
@@ -126,46 +131,55 @@ public class AddRestroomActivity extends AppCompatActivity {
                 selectedLng, selectedLat, etLocation.getText().toString(),
                 swIsPaid.isChecked(), swIsSeparated.isChecked());
 
+        // Show progress bar during the final save/upload process
+        uploadProgressBar.setVisibility(View.VISIBLE);
+        btnConfirm.setEnabled(false);
+
         // Saving the new Restroom object to the database
         restroomRef.child(currentRestroomId).setValue(newRestroom)
                 .addOnSuccessListener(aVoid -> {
-                    Toast.makeText(this, "Restroom added successfully!", Toast.LENGTH_SHORT).show();
-                    finish();
+                    if (pendingImageUris.isEmpty()) {
+                        // No photos to upload, just finish
+                        Toast.makeText(this, "Restroom added successfully!", Toast.LENGTH_SHORT).show();
+                        finish();
+                    } else {
+                        // Start uploading the queue
+                        uploadPhotosInQueue();
+                    }
                 })
                 .addOnFailureListener(e -> {
+                    uploadProgressBar.setVisibility(View.GONE);
+                    btnConfirm.setEnabled(true);
                     Toast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 });
     }
+    private void uploadPhotosInQueue() {
+        uploadCount = 0;
+        for (Uri uri : pendingImageUris) {
+            uploadSinglePhoto(uri);
+        }
+    }
 
-    // Handle the 'Add Photos' button click
-    private void handleImageUpload(Uri uri) {
-        uploadProgressBar.setVisibility(View.VISIBLE); // Show the progress bar
-        btnAddPhotos.setEnabled(false); // Prevent double-clicks
-
-        byte[] compressedData = compressImage(uri); // Compresses the image
+    private void uploadSinglePhoto(Uri uri) {
+        byte[] compressedData = compressImage(uri);
         if (compressedData == null) {
-            uploadProgressBar.setVisibility(View.GONE);
-            btnAddPhotos.setEnabled(true);
+            checkUploadProgress();
             return;
         }
 
-        // Upload the compressed image to firebase storage
         String photoId = FirebaseDatabase.getInstance().getReference().push().getKey();
         StorageReference fileRef = storageRef.child(currentRestroomId).child(photoId + ".jpg");
 
         fileRef.putBytes(compressedData).addOnSuccessListener(taskSnapshot -> {
             fileRef.getDownloadUrl().addOnSuccessListener(downloadUri -> {
-                savePhotoMetadata(photoId, downloadUri.toString());
+                savePhotoMetadataAndCheckProgress(photoId, downloadUri.toString());
             });
         }).addOnFailureListener(e -> {
-            uploadProgressBar.setVisibility(View.GONE);
-            btnAddPhotos.setEnabled(true);
-            Toast.makeText(this, "Upload failed", Toast.LENGTH_SHORT).show();
+            checkUploadProgress(); // Still check progress even if one fails
         });
     }
 
-    // Save the Image to Realtime Database
-    private void savePhotoMetadata(String photoId, String downloadUrl) {
+    private void savePhotoMetadataAndCheckProgress(String photoId, String downloadUrl) {
         String uId = FirebaseAuth.getInstance().getUid();
         Photo newPhoto = new Photo(photoId, currentRestroomId, uId, downloadUrl, System.currentTimeMillis());
 
@@ -173,11 +187,19 @@ public class AddRestroomActivity extends AppCompatActivity {
                 .child(currentRestroomId)
                 .child(photoId)
                 .setValue(newPhoto)
-                .addOnSuccessListener(aVoid -> {
-                    uploadProgressBar.setVisibility(View.GONE);
-                    btnAddPhotos.setEnabled(true);
-                    Toast.makeText(this, "Photo added!", Toast.LENGTH_SHORT).show();
+                .addOnCompleteListener(task -> {
+                    checkUploadProgress();
                 });
+    }
+
+    private void checkUploadProgress() {
+        uploadCount++;
+        // If all photos in the list have been processed (success or failure)
+        if (uploadCount >= pendingImageUris.size()) {
+            uploadProgressBar.setVisibility(View.GONE);
+            Toast.makeText(this, "Restroom and photos saved!", Toast.LENGTH_SHORT).show();
+            finish();
+        }
     }
 
     // Compresses the image to a max of 100KB
