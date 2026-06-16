@@ -15,6 +15,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
@@ -64,6 +65,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 
 public class MapActivity extends AppCompatActivity implements OnMapReadyCallback {
+
+    // The selected radius - global variable
+    private Restroom currentSelectedRestroom;
 
     // Elements for the regular map activity
     private GoogleMap mMap;
@@ -130,13 +134,27 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
             }
         });
 
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {/*Empty to disable the back button*/}
+        });
+
         // Navigate to 'Add Restroom' screen (Placeholder)
         btnAddRestroom.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Toast.makeText(MapActivity.this, "Opening 'Add Restroom' screen...", Toast.LENGTH_SHORT).show();
-                Intent intent = new Intent(MapActivity.this, AddRestroomActivity.class);
-                startActivity(intent);
+                // Check if either FINE or COARSE location permission is granted
+                if (ContextCompat.checkSelfPermission(MapActivity.this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
+                        ContextCompat.checkSelfPermission(MapActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+
+                    // Permission active: allow them to proceed to AddRestroomActivity
+                    Intent intent = new Intent(MapActivity.this, AddRestroomActivity.class);
+                    startActivity(intent);
+
+                } else {
+                    // Permission missing: block entry and show the Toast message
+                    Toast.makeText(MapActivity.this, "You must activate location to add a restroom.", Toast.LENGTH_LONG).show();
+                }
             }
         });
 
@@ -362,7 +380,33 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         btnPhotos.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                openGalleryToSelectPhoto();
+                // Safety checks to ensure we have a restroom and GPS data
+                if (selectedRestroomId != null && currentSelectedRestroom != null) {
+                    if (ActivityCompat.checkSelfPermission(MapActivity.this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+
+                        fusedLocationClient.getLastLocation().addOnSuccessListener(location -> {
+                            if (location != null) {
+                                // Check if user is within 250 meters of the current restroom's coordinates
+                                boolean insideGeofence = MapPickerActivity.isWithinRadius(
+                                        location.getLatitude(), location.getLongitude(),
+                                        currentSelectedRestroom.getLatitude(), currentSelectedRestroom.getLongitude(),
+                                        250f
+                                );
+
+                                if (insideGeofence) {
+                                    openGalleryToSelectPhoto(); // Allowed!
+                                } else {
+                                    Toast.makeText(MapActivity.this, "You must be within 250 meters of this restroom to add photos.", Toast.LENGTH_LONG).show();
+                                }
+                            } else {
+                                Toast.makeText(MapActivity.this, "Unable to determine your location. Please ensure GPS is turned on.", Toast.LENGTH_SHORT).show();
+                            }
+                        });
+
+                    } else {
+                        Toast.makeText(MapActivity.this, "Location permission is required to verify your proximity.", Toast.LENGTH_SHORT).show();
+                    }
+                }
             }
         });
     }
@@ -384,6 +428,9 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
 
     // Display the details of the selected restroom
     private void displayRestroomDetails(Restroom restroom) {
+        // Update what the current restroom is
+        this.currentSelectedRestroom = restroom;
+
         selectedRestroomId = restroom.getRestroomId();
 
         // Update basic UI
